@@ -1,24 +1,46 @@
 {
   "expo": {
-    "name": "sesame",
+    "name": "Sésame",
     "slug": "sesame",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "platforms": [
+      "ios"
+    ],
     "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+      "supportsTablet": false,
+      "bundleIdentifier": "com.oliviergueroult.sesame",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "UIApplicationSceneManifest": {
+          "UIApplicationSupportsMultipleScenes": true,
+          "UISceneConfigurations": {
+            "CPTemplateApplicationSceneSessionRoleApplication": [
+              {
+                "UISceneClassName": "CPTemplateApplicationScene",
+                "UISceneConfigurationName": "CarPlay Configuration",
+                "UISceneDelegateClassName": "$(PRODUCT_MODULE_NAME).CarPlaySceneDelegate"
+              },
+              {
+                "UISceneClassName": "CPTemplateApplicationScene",
+                "UISceneConfigurationName": "CarPlay Configuration",
+                "UISceneDelegateClassName": "$(PRODUCT_MODULE_NAME).CarPlaySceneDelegate"
+              }
+            ]
+          }
+        },
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "extra": {
+      "eas": {
+        "projectId": "2031fbfa-bf81-423a-ad9b-6ff3eb7bc5ec"
+      }
+    },
+    "owner": "oliviergueroult"
   }
 }
