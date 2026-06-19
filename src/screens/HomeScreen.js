@@ -1,27 +1,32 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert
+  ActivityIndicator, Alert, SafeAreaView
 } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { openDoor, logout } from '../api';
 
 const DOORS = [
-  { id: 'portail', label: 'Portail', icon: '🚗' },
-  { id: 'garage',  label: 'Garage',  icon: '🏠' },
+  { id: 'portail', label: 'Portail', icon: 'gate',        color: '#f5a623' },
+  { id: 'garage',  label: 'Garage',  icon: 'garage-open', color: '#4a9eff' },
 ];
 
 export default function HomeScreen({ onLogout }) {
-  const [opening, setOpening] = useState(null);
+  const [loading, setLoading] = useState(null); // 'portail-open' | 'portail-close' | etc.
 
-  const handleOpen = async (door) => {
-    setOpening(door.id);
+  const handleAction = async (doorId, action) => {
+    const key = `${doorId}-${action}`;
+    setLoading(key);
     try {
-      await openDoor(door.id);
-      Alert.alert('✓ Commande envoyée', `${door.label} en cours d'ouverture.`);
+      await openDoor(doorId, action);
+      Alert.alert(
+        action === 'open' ? '✓ Ouverture' : '✓ Fermeture',
+        `Commande envoyée.`
+      );
     } catch {
-      Alert.alert('Erreur', `Impossible d'ouvrir le ${door.label}.`);
+      Alert.alert('Erreur', 'Impossible d\'envoyer la commande.');
     } finally {
-      setOpening(null);
+      setLoading(null);
     }
   };
 
@@ -31,7 +36,7 @@ export default function HomeScreen({ onLogout }) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Sésame</Text>
         <TouchableOpacity onPress={handleLogout}>
@@ -39,36 +44,55 @@ export default function HomeScreen({ onLogout }) {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.hint}>Utilisez CarPlay pour ouvrir depuis votre voiture.</Text>
-
       <View style={styles.grid}>
         {DOORS.map(door => (
-          <TouchableOpacity
-            key={door.id}
-            style={styles.doorButton}
-            onPress={() => handleOpen(door)}
-            disabled={!!opening}
-          >
-            {opening === door.id
-              ? <ActivityIndicator color="#fff" size="large" />
-              : <>
-                  <Text style={styles.doorIcon}>{door.icon}</Text>
-                  <Text style={styles.doorText}>{door.label}</Text>
-                </>
-            }
-          </TouchableOpacity>
+          <View key={door.id} style={styles.card}>
+            <MaterialCommunityIcons name={door.icon} size={56} color={door.color} style={styles.icon} />
+            <Text style={styles.doorLabel}>{door.label}</Text>
+
+            <View style={styles.actions}>
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: '#1e3a1e' }]}
+                onPress={() => handleAction(door.id, 'open')}
+                disabled={!!loading}
+              >
+                {loading === `${door.id}-open`
+                  ? <ActivityIndicator color="#4caf50" size="small" />
+                  : <>
+                      <MaterialCommunityIcons name="arrow-up-circle" size={20} color="#4caf50" />
+                      <Text style={[styles.actionText, { color: '#4caf50' }]}>Ouvrir</Text>
+                    </>
+                }
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: '#3a1e1e' }]}
+                onPress={() => handleAction(door.id, 'close')}
+                disabled={!!loading}
+              >
+                {loading === `${door.id}-close`
+                  ? <ActivityIndicator color="#f44336" size="small" />
+                  : <>
+                      <MaterialCommunityIcons name="arrow-down-circle" size={20} color="#f44336" />
+                      <Text style={[styles.actionText, { color: '#f44336' }]}>Fermer</Text>
+                    </>
+                }
+              </TouchableOpacity>
+            </View>
+          </View>
         ))}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, backgroundColor: '#1a1a2e', padding: 24, paddingTop: 60,
+    flex: 1, backgroundColor: '#1a1a2e',
   },
   header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 24, paddingTop: 20, paddingBottom: 8,
   },
   title: {
     fontSize: 32, fontWeight: '700', color: '#fff',
@@ -76,20 +100,27 @@ const styles = StyleSheet.create({
   logoutText: {
     color: '#f5a623', fontSize: 14,
   },
-  hint: {
-    color: '#888', fontSize: 13, marginBottom: 40,
-  },
   grid: {
-    flexDirection: 'row', gap: 16,
+    flex: 1, padding: 16, gap: 16,
   },
-  doorButton: {
-    flex: 1, backgroundColor: '#2a2a3e', borderRadius: 20,
-    paddingVertical: 48, alignItems: 'center', justifyContent: 'center',
+  card: {
+    backgroundColor: '#252540', borderRadius: 20,
+    padding: 24, alignItems: 'center',
   },
-  doorIcon: {
-    fontSize: 48, marginBottom: 12,
+  icon: {
+    marginBottom: 8,
   },
-  doorText: {
-    color: '#fff', fontSize: 20, fontWeight: '600',
+  doorLabel: {
+    color: '#fff', fontSize: 22, fontWeight: '700', marginBottom: 20,
+  },
+  actions: {
+    flexDirection: 'row', gap: 12, width: '100%',
+  },
+  actionBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, borderRadius: 12, paddingVertical: 14,
+  },
+  actionText: {
+    fontSize: 15, fontWeight: '600',
   },
 });

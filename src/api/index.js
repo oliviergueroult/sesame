@@ -22,8 +22,8 @@ export const logout = async () => {
   await AsyncStorage.removeItem('sesame_doors');
 };
 
-export const openDoor = (door) =>
-  api.post('/open', { door }).then(r => r.data);
+export const openDoor = (door, action = 'open') =>
+  api.post('/open', { door, action }).then(r => r.data);
 
 export const isLoggedIn = async () => {
   const token = await AsyncStorage.getItem('sesame_token');
