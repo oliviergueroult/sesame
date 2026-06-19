@@ -4,34 +4,44 @@ import {
   StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { login, register } from '../api';
+import { login, register, isLoggedIn } from '../api';
 import {
   isBiometricsAvailable, isBiometricsEnabled,
-  authenticateWithBiometrics, enableBiometrics, getBiometricsType
+  authenticateWithBiometrics, enableBiometrics,
+  disableBiometrics, getBiometricsType
 } from '../utils/biometrics';
 
 export default function LoginScreen({ onLogin }) {
-  const [mode, setMode]           = useState('login');
-  const [email, setEmail]         = useState('');
-  const [password, setPassword]   = useState('');
-  const [loading, setLoading]     = useState(false);
-  const [bioAvailable, setBioAvailable] = useState(false);
-  const [bioType, setBioType]     = useState(null);
+  const [mode, setMode]         = useState('login');
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [bioType, setBioType]   = useState(null);
+  const [bioEnabled, setBioEnabled] = useState(false);
 
   useEffect(() => {
     (async () => {
       const available = await isBiometricsAvailable();
-      const enabled   = await isBiometricsEnabled();
-      const type      = await getBiometricsType();
-      setBioAvailable(available);
+      if (!available) return;
+      const type    = await getBiometricsType();
+      const enabled = await isBiometricsEnabled();
+      const logged  = await isLoggedIn();
       setBioType(type);
-      // Auto-prompt Face ID si déjà activé
-      if (available && enabled) {
+      setBioEnabled(enabled);
+
+      // Auto-prompt si déjà activé et déjà connecté
+      if (enabled && logged) {
         const ok = await authenticateWithBiometrics();
         if (ok) onLogin();
       }
     })();
   }, []);
+
+  const handleBioLogin = async () => {
+    const ok = await authenticateWithBiometrics();
+    if (ok) onLogin();
+    else Alert.alert('Échec', 'Authentification biométrique échouée.');
+  };
 
   const handleSubmit = async () => {
     if (!email || !password) return;
@@ -40,22 +50,22 @@ export default function LoginScreen({ onLogin }) {
       if (mode === 'login') await login(email.trim(), password);
       else await register(email.trim(), password);
 
-      // Proposer Face ID après la première connexion réussie
-      if (bioAvailable) {
-        const enabled = await isBiometricsEnabled();
-        if (!enabled) {
-          Alert.alert(
-            bioType === 'faceid' ? 'Face ID' : 'Empreinte',
-            `Voulez-vous utiliser ${bioType === 'faceid' ? 'Face ID' : 'votre empreinte'} pour vous connecter ?`,
-            [
-              { text: 'Non', onPress: onLogin },
-              { text: 'Oui', onPress: async () => { await enableBiometrics(); onLogin(); } },
-            ]
-          );
-          return;
-        }
+      const available = await isBiometricsAvailable();
+      const alreadyEnabled = await isBiometricsEnabled();
+
+      if (available && !alreadyEnabled) {
+        const label = bioType === 'faceid' ? 'Face ID' : 'Empreinte digitale';
+        Alert.alert(
+          `Activer ${label} ?`,
+          `Connectez-vous en un regard au prochain lancement.`,
+          [
+            { text: 'Non', style: 'cancel', onPress: () => { disableBiometrics(); onLogin(); } },
+            { text: `Oui, activer`, onPress: async () => { await enableBiometrics(); onLogin(); } },
+          ]
+        );
+      } else {
+        onLogin();
       }
-      onLogin();
     } catch (e) {
       Alert.alert('Erreur', e.response?.data?.error || 'Une erreur est survenue.');
     } finally {
@@ -102,17 +112,14 @@ export default function LoginScreen({ onLogin }) {
         }
       </TouchableOpacity>
 
-      {bioAvailable && mode === 'login' && (
-        <TouchableOpacity style={styles.bioBtn} onPress={async () => {
-          const ok = await authenticateWithBiometrics();
-          if (ok) onLogin();
-        }}>
+      {bioType && bioEnabled && (
+        <TouchableOpacity style={styles.bioBtn} onPress={handleBioLogin}>
           <MaterialCommunityIcons
             name={bioType === 'faceid' ? 'face-recognition' : 'fingerprint'}
-            size={32} color="#f5a623"
+            size={40} color="#f5a623"
           />
           <Text style={styles.bioText}>
-            {bioType === 'faceid' ? 'Se connecter avec Face ID' : 'Se connecter avec l\'empreinte'}
+            {bioType === 'faceid' ? 'Face ID' : 'Empreinte digitale'}
           </Text>
         </TouchableOpacity>
       )}
@@ -130,8 +137,8 @@ const styles = StyleSheet.create({
   tabText:       { color: '#888', fontWeight: '600', fontSize: 14 },
   tabTextActive: { color: '#fff' },
   input:         { width: '100%', backgroundColor: '#252540', color: '#fff', borderRadius: 12, padding: 16, marginBottom: 12, fontSize: 16 },
-  button:     { width: '100%', backgroundColor: '#f5a623', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  bioBtn:     { marginTop: 28, alignItems: 'center', gap: 8 },
-  bioText:    { color: '#f5a623', fontSize: 14, fontWeight: '500' },
+  button:        { width: '100%', backgroundColor: '#f5a623', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
+  buttonText:    { color: '#fff', fontSize: 16, fontWeight: '600' },
+  bioBtn:        { marginTop: 36, alignItems: 'center', gap: 8 },
+  bioText:       { color: '#f5a623', fontSize: 14, fontWeight: '500' },
 });
