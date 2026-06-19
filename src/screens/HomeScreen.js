@@ -111,19 +111,25 @@ export default function HomeScreen({ onLogout, onConfig }) {
   useEffect(() => { fetchStatus(); }, [fetchStatus]);
 
   const handleDoorAction = async (door, action) => {
+    // Toute nouvelle commande lève le lock précédent
+    lockedUntil.current[door] = 0;
+
     if (action === 'stop') {
-      // Stop : état inconnu immédiatement, lock 10s pour ignorer TaHoma
-      lockedUntil.current[door] = Date.now() + 10000;
+      // Stop : état inconnu immédiatement, lock indéfini
+      // (TaHoma dit "open" quand porte à mi-chemin — on ignore jusqu'à la prochaine commande)
+      lockedUntil.current[door] = Infinity;
       try { await openDoor(door, action); } catch {}
       setStatus(prev => ({ ...prev, [door]: 'unknown' }));
       return;
     }
-    // Open / close : moving, puis on poll après que la porte a eu le temps de bouger
+
+    // Open / close : moving, lock 30s le temps que TaHoma confirme l'état final
     setStatus(prev => ({ ...prev, [door]: 'moving' }));
-    lockedUntil.current[door] = Date.now() + 25000; // laisse 25s à TaHoma pour mettre à jour
+    lockedUntil.current[door] = Date.now() + 30000;
     try { await openDoor(door, action); } catch {}
-    setTimeout(fetchStatus, 8000);
-    setTimeout(fetchStatus, 20000);
+    setTimeout(fetchStatus, 5000);
+    setTimeout(fetchStatus, 15000);
+    setTimeout(() => { lockedUntil.current[door] = 0; fetchStatus(); }, 30000);
   };
 
   const handleAlarm = async (action) => {
@@ -150,7 +156,7 @@ export default function HomeScreen({ onLogout, onConfig }) {
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.grid}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await fetchStatus(); setRefreshing(false); }} tintColor="#f5a623" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { lockedUntil.current = {}; setRefreshing(true); await fetchStatus(); setRefreshing(false); }} tintColor="#f5a623" />}
       >
         <DoorCard id="portail" state={status.portail} onAction={handleDoorAction} />
         <DoorCard id="garage"  state={status.garage}  onAction={handleDoorAction} />
