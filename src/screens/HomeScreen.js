@@ -81,24 +81,25 @@ function AlarmCard({ state, onToggle }) {
 }
 
 export default function HomeScreen({ onLogout, onConfig }) {
-  const [status, setStatus]       = useState({ portail: 'unknown', garage: 'unknown', alarm: 'unknown' });
+  const [status, setStatus]         = useState({ portail: 'unknown', garage: 'unknown', alarm: 'unknown' });
   const [refreshing, setRefreshing] = useState(false);
+  const lockedUntil = React.useRef({}); // door → timestamp, ignore TaHoma pendant ce délai
 
   const fetchStatus = useCallback(async () => {
     try {
       const s = await getStatus();
-      // Ne met à jour que les états explicitement retournés par le backend
       setStatus(prev => {
         const next = { ...prev };
-        Object.entries(s).forEach(([k, v]) => { if (v) next[k] = v; });
-        // Si un appareil était "moving" et que le backend ne renvoie rien → unknown
+        const now  = Date.now();
+        Object.entries(s).forEach(([k, v]) => {
+          if (v && !(lockedUntil.current[k] > now)) next[k] = v;
+        });
         ['portail', 'garage'].forEach(k => {
-          if (prev[k] === 'moving' && !s[k]) next[k] = 'unknown';
+          if (prev[k] === 'moving' && !s[k] && !(lockedUntil.current[k] > now)) next[k] = 'unknown';
         });
         return next;
       });
     } catch {
-      // Erreur réseau : on garde l'état précédent sauf les "moving" → unknown
       setStatus(prev => ({
         ...prev,
         portail: prev.portail === 'moving' ? 'unknown' : prev.portail,
@@ -110,13 +111,19 @@ export default function HomeScreen({ onLogout, onConfig }) {
   useEffect(() => { fetchStatus(); }, [fetchStatus]);
 
   const handleDoorAction = async (door, action) => {
+    if (action === 'stop') {
+      // Stop : état inconnu immédiatement, lock 10s pour ignorer TaHoma
+      lockedUntil.current[door] = Date.now() + 10000;
+      try { await openDoor(door, action); } catch {}
+      setStatus(prev => ({ ...prev, [door]: 'unknown' }));
+      return;
+    }
+    // Open / close : moving, puis on poll après que la porte a eu le temps de bouger
     setStatus(prev => ({ ...prev, [door]: 'moving' }));
-    try {
-      await openDoor(door, action);
-    } catch {}
-    // Deux rafraîchissements : 3s puis 7s pour laisser le temps à TaHoma
-    setTimeout(fetchStatus, 3000);
-    setTimeout(fetchStatus, 7000);
+    lockedUntil.current[door] = Date.now() + 25000; // laisse 25s à TaHoma pour mettre à jour
+    try { await openDoor(door, action); } catch {}
+    setTimeout(fetchStatus, 8000);
+    setTimeout(fetchStatus, 20000);
   };
 
   const handleAlarm = async (action) => {
