@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet,
+  View, Text, TouchableOpacity, StyleSheet, Alert,
   ActivityIndicator, SafeAreaView, RefreshControl, ScrollView
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -138,7 +138,9 @@ export default function HomeScreen({ onLogout, onConfig }) {
     try {
       await triggerAlarm(action);
       setStatus(prev => ({ ...prev, alarm: action === 'arm' ? 'armed' : 'disarmed' }));
-    } catch {}
+    } catch (e) {
+      Alert.alert('Alarme', e.response?.data?.error || 'Commande échouée — vérifiez les logs Railway.');
+    }
   };
 
   return (
