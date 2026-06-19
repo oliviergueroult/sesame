@@ -17,20 +17,25 @@ export const login = async (email, password) => {
   return data;
 };
 
-export const logout = async () => {
-  await AsyncStorage.removeItem('sesame_token');
-  await AsyncStorage.removeItem('sesame_doors');
+export const register = async (email, password) => {
+  const { data } = await api.post('/auth/register', { email, password });
+  await AsyncStorage.setItem('sesame_token', data.token);
+  return data;
 };
 
-export const getStatus = () => api.get('/status').then(r => r.data);
-
-export const openDoor = (door, action = 'open') =>
-  api.post('/open', { door, action }).then(r => r.data);
-
-export const triggerAlarm = (action) =>
-  api.post('/alarm', { action }).then(r => r.data);
+export const logout = async () => {
+  await AsyncStorage.removeItem('sesame_token');
+};
 
 export const isLoggedIn = async () => {
   const token = await AsyncStorage.getItem('sesame_token');
   return !!token;
 };
+
+export const getConfig  = () => api.get('/config').then(r => r.data);
+export const saveConfig = (system_type, credentials) =>
+  api.post('/config', { system_type, credentials }).then(r => r.data);
+
+export const getStatus   = () => api.get('/status').then(r => r.data);
+export const openDoor    = (door, action = 'open') => api.post('/open', { door, action }).then(r => r.data);
+export const triggerAlarm = (action) => api.post('/alarm', { action }).then(r => r.data);

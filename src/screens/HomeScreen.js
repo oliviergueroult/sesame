@@ -80,7 +80,7 @@ function AlarmCard({ state, onToggle }) {
   );
 }
 
-export default function HomeScreen({ onLogout }) {
+export default function HomeScreen({ onLogout, onConfig }) {
   const [status, setStatus]       = useState({ portail: 'unknown', garage: 'unknown', alarm: 'unknown' });
   const [refreshing, setRefreshing] = useState(false);
 
@@ -110,9 +110,14 @@ export default function HomeScreen({ onLogout }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Sésame</Text>
-        <TouchableOpacity onPress={async () => { await logout(); onLogout(); }}>
-          <Text style={styles.logoutText}>Déconnexion</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={onConfig} style={styles.headerBtn}>
+            <MaterialCommunityIcons name="cog-outline" size={22} color="#f5a623" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={async () => { await logout(); onLogout(); }} style={styles.headerBtn}>
+            <MaterialCommunityIcons name="logout" size={22} color="#888" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -132,7 +137,9 @@ const styles = StyleSheet.create({
   container:  { flex: 1, backgroundColor: '#1a1a2e' },
   header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 8 },
   title:      { fontSize: 32, fontWeight: '700', color: '#fff' },
-  logoutText: { color: '#f5a623', fontSize: 14 },
+  logoutText:    { color: '#f5a623', fontSize: 14 },
+  headerActions: { flexDirection: 'row', gap: 4 },
+  headerBtn:     { padding: 6 },
   scroll:     { flex: 1 },
   grid:       { padding: 16, gap: 12 },
   card:       { backgroundColor: '#252540', borderRadius: 20, padding: 20, alignItems: 'center', gap: 10, borderWidth: 1.5, borderColor: '#333' },
