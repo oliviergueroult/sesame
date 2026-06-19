@@ -22,7 +22,8 @@
     "production": {
       "ios": {
         "appleId": "oliviergueroult@orange.fr",
-        "appleTeamId": "RHQZ2H5DNN"
+        "appleTeamId": "RHQZ2H5DNN",
+        "ascAppId": "6781999642"
       }
     }
   }
