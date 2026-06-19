@@ -87,9 +87,18 @@ export default function HomeScreen({ onLogout, onConfig }) {
   const fetchStatus = useCallback(async () => {
     try {
       const s = await getStatus();
-      setStatus(prev => ({ ...prev, ...s }));
+      // Ne met à jour que les états explicitement retournés par le backend
+      setStatus(prev => {
+        const next = { ...prev };
+        Object.entries(s).forEach(([k, v]) => { if (v) next[k] = v; });
+        // Si un appareil était "moving" et que le backend ne renvoie rien → unknown
+        ['portail', 'garage'].forEach(k => {
+          if (prev[k] === 'moving' && !s[k]) next[k] = 'unknown';
+        });
+        return next;
+      });
     } catch {
-      // Si le status échoue, on remet les portes en mouvement → unknown
+      // Erreur réseau : on garde l'état précédent sauf les "moving" → unknown
       setStatus(prev => ({
         ...prev,
         portail: prev.portail === 'moving' ? 'unknown' : prev.portail,
