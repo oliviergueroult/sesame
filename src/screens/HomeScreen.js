@@ -66,6 +66,20 @@ export default function HomeScreen({ onLogout }) {
               </TouchableOpacity>
 
               <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: '#2a2a1e' }]}
+                onPress={() => handleAction(door.id, 'stop')}
+                disabled={!!loading}
+              >
+                {loading === `${door.id}-stop`
+                  ? <ActivityIndicator color="#f5a623" size="small" />
+                  : <>
+                      <MaterialCommunityIcons name="stop-circle" size={20} color="#f5a623" />
+                      <Text style={[styles.actionText, { color: '#f5a623' }]}>Stop</Text>
+                    </>
+                }
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: '#3a1e1e' }]}
                 onPress={() => handleAction(door.id, 'close')}
                 disabled={!!loading}
