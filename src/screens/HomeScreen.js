@@ -83,7 +83,8 @@ function AlarmCard({ state, onToggle }) {
 export default function HomeScreen({ onLogout, onConfig }) {
   const [status, setStatus]         = useState({ portail: 'unknown', garage: 'unknown', alarm: 'unknown' });
   const [refreshing, setRefreshing] = useState(false);
-  const lockedUntil = React.useRef({}); // door → timestamp, ignore TaHoma pendant ce délai
+  const lockedUntil  = React.useRef({});
+  const pendingTasks = React.useRef({}); // door → [timeoutId, ...] à annuler si nouvelle commande
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -111,25 +112,26 @@ export default function HomeScreen({ onLogout, onConfig }) {
   useEffect(() => { fetchStatus(); }, [fetchStatus]);
 
   const handleDoorAction = async (door, action) => {
-    // Toute nouvelle commande lève le lock précédent
-    lockedUntil.current[door] = 0;
+    // Annule tous les timeouts en attente pour cette porte
+    (pendingTasks.current[door] || []).forEach(id => clearTimeout(id));
+    pendingTasks.current[door] = [];
+    lockedUntil.current[door]  = 0;
 
     if (action === 'stop') {
-      // Stop : état inconnu immédiatement, lock indéfini
-      // (TaHoma dit "open" quand porte à mi-chemin — on ignore jusqu'à la prochaine commande)
-      lockedUntil.current[door] = Infinity;
+      lockedUntil.current[door] = Infinity; // lock indéfini jusqu'à la prochaine commande
       try { await openDoor(door, action); } catch {}
       setStatus(prev => ({ ...prev, [door]: 'unknown' }));
       return;
     }
 
-    // Open / close : moving, lock 30s le temps que TaHoma confirme l'état final
     setStatus(prev => ({ ...prev, [door]: 'moving' }));
     lockedUntil.current[door] = Date.now() + 30000;
     try { await openDoor(door, action); } catch {}
-    setTimeout(fetchStatus, 5000);
-    setTimeout(fetchStatus, 15000);
-    setTimeout(() => { lockedUntil.current[door] = 0; fetchStatus(); }, 30000);
+
+    const t1 = setTimeout(fetchStatus, 5000);
+    const t2 = setTimeout(fetchStatus, 15000);
+    const t3 = setTimeout(() => { lockedUntil.current[door] = 0; fetchStatus(); }, 30000);
+    pendingTasks.current[door] = [t1, t2, t3];
   };
 
   const handleAlarm = async (action) => {
