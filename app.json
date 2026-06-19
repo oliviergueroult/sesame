@@ -11,10 +11,9 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.oliviergueroult.sesame",
       "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        },
-        "ITSAppUsesNonExemptEncryption": false
+        "NSAppTransportSecurity": { "NSAllowsArbitraryLoads": true },
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSFaceIDUsageDescription": "Sésame utilise Face ID pour sécuriser l'accès à votre portail et garage."
       }
     },
     "extra": {
