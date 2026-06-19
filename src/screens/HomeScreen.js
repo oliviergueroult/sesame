@@ -88,15 +88,26 @@ export default function HomeScreen({ onLogout, onConfig }) {
     try {
       const s = await getStatus();
       setStatus(prev => ({ ...prev, ...s }));
-    } catch {}
+    } catch {
+      // Si le status échoue, on remet les portes en mouvement → unknown
+      setStatus(prev => ({
+        ...prev,
+        portail: prev.portail === 'moving' ? 'unknown' : prev.portail,
+        garage:  prev.garage  === 'moving' ? 'unknown' : prev.garage,
+      }));
+    }
   }, []);
 
   useEffect(() => { fetchStatus(); }, [fetchStatus]);
 
   const handleDoorAction = async (door, action) => {
     setStatus(prev => ({ ...prev, [door]: 'moving' }));
-    try { await openDoor(door, action); } catch {}
-    setTimeout(fetchStatus, 4000);
+    try {
+      await openDoor(door, action);
+    } catch {}
+    // Deux rafraîchissements : 3s puis 7s pour laisser le temps à TaHoma
+    setTimeout(fetchStatus, 3000);
+    setTimeout(fetchStatus, 7000);
   };
 
   const handleAlarm = async (action) => {
