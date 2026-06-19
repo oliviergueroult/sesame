@@ -9,14 +9,6 @@ export default function App() {
 
   useEffect(() => {
     isLoggedIn().then(setLoggedIn).catch(() => setLoggedIn(false));
-
-    try {
-      const CarPlayService = require('./src/carplay/CarPlayService').default;
-      CarPlayService.start();
-      return () => CarPlayService.stop();
-    } catch (e) {
-      console.log('CarPlay non disponible:', e.message);
-    }
   }, []);
 
   if (loggedIn === null) return <View style={{ flex: 1, backgroundColor: '#1a1a2e' }} />;

@@ -6,32 +6,13 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "platforms": [
-      "ios"
-    ],
+    "platforms": ["ios"],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.oliviergueroult.sesame",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        },
-        "UIApplicationSceneManifest": {
-          "UIApplicationSupportsMultipleScenes": true,
-          "UISceneConfigurations": {
-            "CPTemplateApplicationSceneSessionRoleApplication": [
-              {
-                "UISceneClassName": "CPTemplateApplicationScene",
-                "UISceneConfigurationName": "CarPlay Configuration",
-                "UISceneDelegateClassName": "$(PRODUCT_MODULE_NAME).CarPlaySceneDelegate"
-              },
-              {
-                "UISceneClassName": "CPTemplateApplicationScene",
-                "UISceneConfigurationName": "CarPlay Configuration",
-                "UISceneDelegateClassName": "$(PRODUCT_MODULE_NAME).CarPlaySceneDelegate"
-              }
-            ]
-          }
         },
         "ITSAppUsesNonExemptEncryption": false
       }
