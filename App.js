@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { isLoggedIn, getConfig } from './src/api';
+import { isBiometricsEnabled, isBiometricsAvailable, authenticateWithBiometrics } from './src/utils/biometrics';
 import LoginScreen  from './src/screens/LoginScreen';
 import ConfigScreen from './src/screens/ConfigScreen';
 import HomeScreen   from './src/screens/HomeScreen';
@@ -14,9 +15,20 @@ export default function App() {
   };
 
   useEffect(() => {
-    isLoggedIn()
-      .then(logged => setScreen(logged ? 'login' : 'login'))
-      .catch(() => setScreen('login'));
+    (async () => {
+      const logged = await isLoggedIn();
+      if (!logged) return setScreen('login');
+
+      // Token présent → tente Face ID si activé
+      const bioEnabled   = await isBiometricsEnabled();
+      const bioAvailable = await isBiometricsAvailable();
+      if (bioEnabled && bioAvailable) {
+        const ok = await authenticateWithBiometrics();
+        if (!ok) return setScreen('login');
+      }
+
+      await goHome();
+    })();
   }, []);
 
   if (screen === null) return <View style={{ flex: 1, backgroundColor: '#1a1a2e' }} />;

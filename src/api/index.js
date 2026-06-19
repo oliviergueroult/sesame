@@ -7,7 +7,10 @@ const api = axios.create({ baseURL: BASE_URL });
 
 api.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem('sesame_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    config.headers = config.headers ?? {};
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
   return config;
 });
 
